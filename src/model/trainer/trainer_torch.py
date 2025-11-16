@@ -92,7 +92,7 @@ class TorchTrainer(TrainerBase):
         }
 
     # ------------------------------------------------------------------
-    def fit(self, train_loader: DataLoader, val_loader=None, num_epochs=10):
+    def fit(self, train_loader: DataLoader, val_loader=None, num_epochs=100):
         """주어진 데이터로 모델을 학습하고 F1 기준으로 best state를 보존한다."""
         best_f1 = float("-inf")
         best_state = None
@@ -202,6 +202,13 @@ class TorchTrainer(TrainerBase):
                 width *= growth
             return tuple(dims)
 
+        default_epochs = {
+            "mlp": 20,
+            "cnn": 20,
+            "resnet": 20,
+            "convnext": 20,
+        }
+
         def _augment_params(p: Dict[str, Any]) -> Dict[str, Any]:
             """Hyperopt에서 뽑은 primitive 파라미터를 실제 설정값으로 확장한다."""
             enriched = dict(p)
@@ -214,6 +221,7 @@ class TorchTrainer(TrainerBase):
             elif model_type == "convnext":
                 enriched["depths"] = _build_convnext_depths(enriched)
                 enriched["dims"] = _build_convnext_dims(enriched)
+            enriched.setdefault("epochs", default_epochs[model_type])
             return enriched
 
         def objective(params):
@@ -263,7 +271,7 @@ class TorchTrainer(TrainerBase):
                 early_stopping_patience=3,
                 model_name=model_type,
             )
-            trainer.fit(train_loader, val_loader, num_epochs=enriched_params["epochs"])
+            trainer.fit(train_loader=train_loader, val_loader=val_loader)
 
             preds, targets = [], []
             trainer.model.eval()
@@ -357,6 +365,6 @@ class TorchTrainer(TrainerBase):
         if self.logger:
             self.logger.info("[DL][%s] Best Params=%s", model_type.upper(), enriched_best)
 
-        self.fit(train_loader, val_loader, num_epochs=enriched_best["epochs"])
+        self.fit(train_loader=train_loader, val_loader=val_loader)
 
         return self.model, enriched_best, logs_df
