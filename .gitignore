@@ -14,12 +14,17 @@
 *.tmp
 .src/logs/*
 
+# Markdown 문서 (단, README.md는 추적)
+*.md
+!README.md
+
 # IDE 상속 파일
 *.sublime-project
 *.sublime-workspace
 
 # 환경 파일
 *.env
+*.DS_Store
 
 # 테스트 폴더
 .src/tests/*
