@@ -9,11 +9,11 @@ EuroSAT Dataset Loader
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
-import logging
 import numpy as np
 from torch.utils.data import DataLoader, Dataset, Subset
 from torchvision import transforms
