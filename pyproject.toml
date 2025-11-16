@@ -1,0 +1,16 @@
+[tool.black]
+line-length = 140
+target-version = ["py312"]
+exclude = '''
+/(
+    \.venv
+  | \.git
+  | __pycache__
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+skip = ["venv", ".venv", "__pycache__", ".git", "result", "data", "log", ".vscode"]

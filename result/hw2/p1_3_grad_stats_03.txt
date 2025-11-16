@@ -1,0 +1,8 @@
+pair_index=3
+descriptor=grad
+num_matches=200
+dist_mean=0.3596
+dist_median=0.3676
+dist_min=0.2598
+dist_p90=0.3895
+dist_max=0.3938

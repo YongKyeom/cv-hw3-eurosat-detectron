@@ -1,0 +1,7 @@
+pair_index=3
+method=SVD
+n=800
+inliers@3px=537 (0.671)
+err_mean=3.6547
+err_median=2.3322
+err_p90=5.9457

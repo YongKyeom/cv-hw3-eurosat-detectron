@@ -1,0 +1,8 @@
+pair_index=1
+descriptor=SIFT
+num_matches=253
+dist_mean=150.1319
+dist_median=145.0724
+dist_min=54.3599
+dist_p90=207.8547
+dist_max=280.1892

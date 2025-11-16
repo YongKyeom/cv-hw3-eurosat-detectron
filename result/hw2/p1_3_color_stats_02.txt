@@ -1,0 +1,8 @@
+pair_index=2
+descriptor=color
+num_matches=200
+dist_mean=0.0026
+dist_median=0.0014
+dist_min=0.0000
+dist_p90=0.0069
+dist_max=0.0083

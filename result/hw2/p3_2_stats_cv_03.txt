@@ -1,0 +1,7 @@
+pair_index=3
+method=RANSAC(cv2)
+n=800
+inliers@3px=798 (0.998)
+err_mean=1.0091
+err_median=0.2731
+err_p90=0.5966

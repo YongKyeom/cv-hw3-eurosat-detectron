@@ -1,0 +1,8 @@
+pair_index=2
+descriptor=patch
+num_matches=200
+dist_mean=2.4834
+dist_median=2.5016
+dist_min=2.1128
+dist_p90=2.7136
+dist_max=2.7710

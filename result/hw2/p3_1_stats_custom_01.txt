@@ -1,0 +1,7 @@
+pair_index=1
+method=RANSAC(custom)
+n=253
+inliers@3px=241 (0.953)
+err_mean=21.6300
+err_median=1.3139
+err_p90=2.4377
