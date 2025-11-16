@@ -8,6 +8,7 @@
 *__pycache__*
 *.pyc
 *.py[cod]
+*cache*
 
 # 로그 및 임시 파일
 *.log
