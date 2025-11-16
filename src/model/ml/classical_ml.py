@@ -21,6 +21,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from xgboost import XGBClassifier
 
+from model.dl.utils import seed_everything
+
 # ---------------------------------------------------------------------------
 # 🔵 Base Interface
 # ---------------------------------------------------------------------------
@@ -209,9 +211,12 @@ def create_classical_model(
         BaseMLModel: SVMModel / RFModel / XGBModel 중 하나
     """
     assert model_type in ["svm", "rf", "xgb"], f"지원하지 않는 모델: {model_type}"
-
     params = params or {}
 
+    # Set Random Seed
+    seed_everything(2025)
+
+    # Define model
     if model_type == "svm":
         return SVMModel(params=params)
 

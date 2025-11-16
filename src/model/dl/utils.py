@@ -207,6 +207,10 @@ def build_dl_model(model_type: str, num_classes: int, params: Optional[Dict[str,
     params = params or {}
     defaults = DEFAULT_DL_CONFIGS[model_type]
 
+    # Set Random Seed
+    seed_everything(2025)
+
+    # Define model
     if model_type == "mlp":
         cfg = MLPConfig(
             input_dim=32 * 32 * 3,
