@@ -156,7 +156,7 @@ class XGBModel(BaseMLModel):
 
     def __post_init__(self) -> None:
         default = {
-            "n_estimators": 300,
+            "n_estimators": 1500,
             "max_depth": 6,
             "learning_rate": 0.05,
             "subsample": 0.8,
