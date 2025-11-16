@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import gc
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -295,7 +296,14 @@ class TorchTrainer(TrainerBase):
                     f1,
                 )
 
-            return {"loss": 1 - f1, "status": "ok"}
+            result = {"loss": 1 - f1, "status": "ok"}
+
+            del trainer, model
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+            return result
 
         best_params, logs_df = search_runner.optimize(
             space_name=model_type,
