@@ -201,8 +201,8 @@ def load_eurosat(
 
     # 데이터 분할 --------------------------------------------------------------
     n = len(dataset)
-    indices = np.arange(n)
-    np.random.shuffle(indices)
+    rng = np.random.default_rng(2025)
+    indices = rng.permutation(n)
 
     n_train = int(n * config.train_ratio)
     n_val = int(n * config.val_ratio)
