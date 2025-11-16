@@ -28,15 +28,11 @@ SEARCH_SPACES = {
     },
     "rf": {
         "n_estimators": scope.int(hp.quniform("rf_estimators", 300, 1500, q=150)),
-        # "min_samples_leaf": scope.int(hp.quniform("rf_min_samples_leaf", 2, 10, q=1)),
-        # "min_samples_split": scope.int(hp.quniform("rf_min_samples_split", 3, 15, q=2)),
         "max_features": hp.quniform("max_features", 0.5, 1.0, q=0.1),
     },
     "xgb": {
         "max_depth": scope.int(hp.quniform("xgb_max_depth", 3, 12, q=3)),
-        # "min_child_weight": scope.int(hp.quniform("xgb_min_child_weight", 0, 8, q=2)),
         "learning_rate": hp.loguniform("xgb_learning_rate", -3, -1),
-        # "gamma": hp.quniform("xgb_gamma", 0, 8, q=2),
         "subsample": hp.quniform("xgb_subsample", 0.5, 1.0, q=0.1),
         "colsample_bytree": hp.quniform("xgb_colsample_bytree", 0.5, 1.0, q=0.1),
     },
