@@ -162,12 +162,12 @@ class XGBModel(BaseMLModel):
             "subsample": 0.8,
             "colsample_bytree": 0.8,
             "random_state": 2025,
-            "tree_method": "auto",
+            "tree_method": "hist",
             "eval_metric": "mlogloss",
         }
 
         if self.params["is_valid"] is True:
-            default["early_stopping_rounds"] = 50
+            default["early_stopping_rounds"] = 30
         self.params.pop("is_valid", None)
 
         merged = {**default, **self.params}
