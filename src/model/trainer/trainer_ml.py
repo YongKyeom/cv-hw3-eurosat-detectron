@@ -134,8 +134,8 @@ class MLTrainer(TrainerBase):
 
         if model_type == "xgb":
             # n_estimators → Early Stopping으로 최적화
-            model = create_classical_model(model_type=model_type, params=best_params, is_valid=True)
-            model.fit(
+            best_model = create_classical_model(model_type=model_type, params=best_params, is_valid=True)
+            best_model.fit(
                 X_train,
                 y_train,
                 **{
@@ -143,14 +143,19 @@ class MLTrainer(TrainerBase):
                     "verbose": False,
                 },
             )
+
             try:
-                best_params["n_estimators"] = max(int(model.model.best_iteration), 50)
+                best_params["n_estimators"] = max(int(best_model.model.best_iteration), 50)
+                self.model = best_model
             except Exception:
                 if self.logger:
                     self.logger.warning("[ML][%s] Early stopping 정보 없음", model_type.upper())
 
         if self.logger:
             self.logger.info("[ML][%s] Best Params=%s", model_type.upper(), best_params)
+
+        if model_type == "xgb":
+            return best_model, best_params, logs_df
 
         # 최적 파라미터로 모델 재생성 및 전체 학습데이터로 재학습
         best_model = create_classical_model(model_type=model_type, params=best_params, is_valid=False)
