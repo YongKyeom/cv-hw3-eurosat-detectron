@@ -26,6 +26,9 @@
 # 환경 파일
 *.env
 *.DS_Store
+src/.DS_Store
+data/.DS_Store
+
 
 # 테스트 폴더
 .src/tests/*
