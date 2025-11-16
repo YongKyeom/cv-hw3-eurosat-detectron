@@ -257,10 +257,12 @@ if __name__ == "__main__":
         test_hist_dir = hist_root / "test"
 
         # --- 학습/테스트 이미지를 BoF 히스토그램으로 변환하고 PNG 저장 (등간격 30개 샘플) ---
-        train_hist_indices = set(
-            np.linspace(0, len(train_descs) - 1, num=min(30, len(train_descs)), dtype=int).tolist() if train_descs else []
+        train_hist_indices = sorted(
+            set(np.linspace(0, len(train_descs) - 1, num=min(30, len(train_descs)), dtype=int).tolist() if train_descs else [])
         )
-        test_hist_indices = set(np.linspace(0, len(test_descs) - 1, num=min(30, len(test_descs)), dtype=int).tolist() if test_descs else [])
+        test_hist_indices = sorted(
+            set(np.linspace(0, len(test_descs) - 1, num=min(30, len(test_descs)), dtype=int).tolist() if test_descs else [])
+        )
         train_bow_list: List[np.ndarray] = []
         for idx, desc in enumerate(train_descs):
             vec = encoder.encode(codebook.transform(desc))
