@@ -29,6 +29,8 @@
 src/.DS_Store
 data/.DS_Store
 
-
 # 테스트 폴더
-.src/tests/*
+src/tests/*
+
+# reference 코드
+src/reference/
