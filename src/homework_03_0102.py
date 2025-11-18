@@ -28,8 +28,10 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+import gc
 import logging
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -550,6 +552,9 @@ if __name__ == "__main__":
             tuned_train_stats = _evaluate_dl_split(tuned_trainer, train_eval_loader, label_list, "train_tuned", save_dir, model_name)
             tuned_test_stats = _evaluate_dl_split(tuned_trainer, test_loader, label_list, "test_tuned", save_dir, model_name)
 
+            del baseline_trainer, tuned_trainer
+            gc.collect()
+
             if logs_df is not None and not logs_df.empty:
                 logs_df["model_type"] = model_name
                 logs_df.to_csv(save_dir / f"hyperopt_logs_{model_name}.csv", index=False)
@@ -597,3 +602,5 @@ if __name__ == "__main__":
 
     end_time = datetime.now()
     logger.info("No. 1,2 of HW3 Elapsed Time: {} Minutes".format(round((end_time - st_time).seconds / 60, 2)))
+
+    sys.exit(0)
