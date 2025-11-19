@@ -31,7 +31,7 @@ class TorchTrainer(TrainerBase):
         config: TrainerConfig,
         optimizer: torch.optim.Optimizer,
         criterion: Optional[nn.Module] = None,
-        early_stopping_patience: int = 10,
+        early_stopping_patience: int = 5,
         model_name: str = "DL",
     ):
         super().__init__(config)
@@ -202,12 +202,8 @@ class TorchTrainer(TrainerBase):
                 width *= growth
             return tuple(dims)
 
-        default_epochs = {
-            "mlp": 20,
-            "cnn": 20,
-            "resnet": 20,
-            "convnext": 20,
-        }
+        # Default epochs 30 → 적당히 탐색하기 위해 제한
+        default_epochs = {"mlp": 30, "cnn": 30, "resnet": 30, "convnext": 30}
 
         def _augment_params(p: Dict[str, Any]) -> Dict[str, Any]:
             """Hyperopt에서 뽑은 primitive 파라미터를 실제 설정값으로 확장한다."""
