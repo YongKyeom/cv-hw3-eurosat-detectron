@@ -483,8 +483,7 @@ if __name__ == "__main__":
         p2_records: List[Dict[str, Any]] = []
         label_list = list(labels)
         logger.info("---- [문제2] 파라미터 탐색 / 최종 스코어 / 시각화 ----")
-        # for model_name in ["mlp", "cnn", "resnet", "convnext"]:
-        for model_name in ["resnet", "convnext", "cnn", "mlp"]:
+        for model_name in ["mlp", "resnet", "convnext"]:  # "cnn"
             save_dir = result_dir / f"p2_{model_name}"
 
             base_model = build_dl_model(model_name, len(labels))
@@ -492,7 +491,7 @@ if __name__ == "__main__":
                 model=base_model,
                 config=TrainerConfig(save_dir=save_dir),
                 optimizer=torch.optim.Adam(base_model.parameters(), lr=1e-3),
-                early_stopping_patience=10,
+                early_stopping_patience=5,
                 model_name=f"{model_name}_baseline",
             )
             baseline_ckpt = save_dir / f"{model_name}_baseline.pt"
@@ -514,7 +513,7 @@ if __name__ == "__main__":
                 model=tuned_model,
                 config=TrainerConfig(save_dir=save_dir),
                 optimizer=torch.optim.Adam(tuned_model.parameters(), lr=1e-3),
-                early_stopping_patience=10,
+                early_stopping_patience=5,
                 model_name=f"{model_name}_tuned",
             )
             tuned_ckpt = save_dir / f"{model_name}_tuned.pt"
@@ -537,7 +536,7 @@ if __name__ == "__main__":
                     search_runner=dl_runner,
                     train_loader=train_loader,
                     val_loader=val_loader,
-                    max_evals=10,
+                    max_evals=15,
                 )
                 tuned_trainer.save(tuned_ckpt.name)
                 if best_params:
