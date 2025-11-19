@@ -37,35 +37,42 @@ SEARCH_SPACES = {
         "colsample_bytree": hp.quniform("xgb_colsample_bytree", 0.5, 1.0, q=0.1),
     },
     "mlp": {
-        "num_layers": scope.int(hp.quniform("mlp_layers", 2, 4, 1)),
-        "first_dim": scope.int(hp.quniform("mlp_first_dim", 128, 768, 64)),
+        # "num_layers": scope.int(hp.quniform("mlp_layers", 3, 4, 1)),
+        "num_layers": hp.choice("cnn_blocks", [3]),
+        # "first_dim": scope.int(hp.quniform("mlp_first_dim", 256, 768, 64)),
+        "first_dim": hp.choice("mlp_first_dim", [128, 256, 384, 512, 640, 768]),
         "width_decay": hp.uniform("mlp_width_decay", 0.3, 0.8),
-        "dropout": hp.quniform("mlp_dropout", 0.1, 0.4, q=0.1),
-        "lr": hp.loguniform("mlp_lr", -5, -2),
+        "dropout": hp.quniform("mlp_dropout", 0.1, 0.3, q=0.1),
+        "lr": hp.loguniform("mlp_lr", -7, -3),
     },
     "cnn": {
         # "num_blocks": scope.int(hp.quniform("cnn_blocks", 2, 3, 1)),
         "num_blocks": hp.choice("cnn_blocks", [2]),
-        "base_channels": scope.int(hp.quniform("cnn_base_channels", 8, 48, 8)),
-        "channel_growth": hp.quniform("cnn_channel_growth", 1.5, 2.0, 0.1),
+        # "base_channels": scope.int(hp.quniform("cnn_base_channels", 32, 64, 8)),
+        "base_channels": hp.choice("cnn_base_channels", [16, 32, 48, 64]),
+        # "channel_growth": hp.quniform("cnn_channel_growth", 1.5, 2.2, 0.1),
+        "channel_growth": hp.choice("cnn_channel_growth", [1.5, 2]),
         # "use_batchnorm": hp.choice("cnn_use_bn", [True, False]),
         "dropout": hp.quniform("cnn_dropout", 0.1, 0.3, q=0.1),
-        "lr": hp.loguniform("cnn_lr", -5, -2),
+        "lr": hp.loguniform("cnn_lr", -7, -3),
     },
     "resnet": {
         "layer1": scope.int(hp.quniform("resnet_layer1", 2, 3, 1)),
         "layer2": scope.int(hp.quniform("resnet_layer2", 2, 3, 1)),
         "layer3": scope.int(hp.quniform("resnet_layer3", 2, 3, 1)),
-        "base_channels": scope.int(hp.quniform("resnet_base_channels", 8, 48, 8)),
-        "lr": hp.loguniform("resnet_lr", -5, -2),
+        # "base_channels": scope.int(hp.quniform("resnet_base_channels", 24, 64, 8)),
+        "base_channels": hp.choice("resnet_base_channels", [24, 32, 40, 48]),
+        "lr": hp.loguniform("resnet_lr", -7, -3),
     },
     "convnext": {
-        "depth1": scope.int(hp.quniform("convnext_depth1", 1, 3, 1)),
-        "depth2": scope.int(hp.quniform("convnext_depth2", 1, 3, 1)),
-        "depth3": scope.int(hp.quniform("convnext_depth3", 1, 3, 1)),
-        "base_dim": scope.int(hp.quniform("convnext_base_dim", 32, 96, 8)),
-        "dim_growth": hp.uniform("convnext_dim_growth", 1.5, 2.0),
-        "lr": hp.loguniform("convnext_lr", -5, -2),
+        "depth1": scope.int(hp.quniform("convnext_depth1", 2, 3, 1)),
+        "depth2": scope.int(hp.quniform("convnext_depth2", 2, 3, 1)),
+        "depth3": scope.int(hp.quniform("convnext_depth3", 2, 3, 1)),
+        # "base_dim": scope.int(hp.quniform("convnext_base_dim", 32, 96, 8)),
+        "base_dim": hp.choice("convnext_base_dim", [48, 64, 80, 96]),
+        # "dim_growth": hp.uniform("convnext_dim_growth", 1.5, 2.0),
+        "dim_growth": hp.choice("convnext_dim_growth", [1.5, 2]),
+        "lr": hp.loguniform("convnext_lr", -7, -3),
     },
 }
 
@@ -123,7 +130,7 @@ class HyperoptRunner:
         best_params = space_eval(space, best_params_raw)
 
         # logs_df 생성
-        records: list = []
+        records = []
         for t in trials.trials:
             vals = t["misc"]["vals"]
             raw_params = {k: v[0] if isinstance(v, list) else v for k, v in vals.items()}
