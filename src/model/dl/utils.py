@@ -180,10 +180,23 @@ def collect_loader_targets(loader: DataLoader) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 DEFAULT_DL_CONFIGS: Dict[str, Dict[str, Any]] = {
-    "mlp": {"hidden": [512, 256], "dropout": 0.3},
-    "cnn": {"channels": [32, 64, 128], "dropout": 0.3, "use_batchnorm": True},
-    "resnet": {"layers": (2, 2, 2), "base_channels": 32},
-    "convnext": {"depths": (2, 2, 2), "dims": (64, 128, 256)},
+    "mlp": {
+        "hidden": [512, 256],
+        "dropout": 0.3,
+    },
+    "cnn": {
+        "channels": [32, 64, 128],
+        "dropout": 0.3,
+        "use_batchnorm": True,
+    },
+    "resnet": {
+        "layers": (2, 2, 2),
+        "base_channels": 32,
+    },
+    "convnext": {
+        "depths": (2, 2, 2),
+        "dims": (64, 128, 256),
+    },
 }
 
 
