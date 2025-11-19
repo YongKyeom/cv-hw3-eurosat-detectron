@@ -48,7 +48,7 @@ class TrainerBase(abc.ABC):
         self.verbose = config.verbose
 
         self.save_dir.mkdir(parents=True, exist_ok=True)
-        self.logger = logging.getLogger("hw03_logger")
+        self.logger = logging.getLogger()
 
     # ----------------------------------------------------------------------
     # 필수 구현 메서드: 하위 클래스에서 반드시 override
@@ -148,6 +148,7 @@ class TrainerBase(abc.ABC):
     # ----------------------------------------------------------------------
     # 하이퍼파라미터 튜닝 인터페이스
     # ----------------------------------------------------------------------
+    @abc.abstractmethod
     def hyperopt_search(self, *args, **kwargs) -> Dict[str, Any]:
         """
         HyperoptRunner를 호출하기 위한 공통 인터페이스.
