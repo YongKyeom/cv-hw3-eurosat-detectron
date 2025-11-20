@@ -1,0 +1,13 @@
+{
+  "base_channels": 32,
+  "epochs": 30,
+  "layer1": 3,
+  "layer2": 2,
+  "layer3": 2,
+  "layers": [
+    3,
+    2,
+    2
+  ],
+  "lr": 0.002246906518888923
+}
