@@ -205,246 +205,246 @@ if __name__ == "__main__":
     #     • 최종 스코어: Baseline/Tuned Accuracy
     #     • 시각화: Confusion Matrix(베이스/튜닝) 저장
     # ------------------------------------------------------------------
-    # logger.info("==================== 문제 1: Bag-of-Features ====================")
-    # scene_dir = data_dir / "SCENE-15"
-    # if scene_dir.exists():
-    #     train_root = scene_dir / "train"
-    #     test_root = scene_dir / "test"
-    #     classes = sorted([p.name for p in train_root.iterdir() if p.is_dir()])
-    #     class_to_idx = {c: idx for idx, c in enumerate(classes)}
+    logger.info("==================== 문제 1: Bag-of-Features ====================")
+    scene_dir = data_dir / "SCENE-15"
+    if scene_dir.exists():
+        train_root = scene_dir / "train"
+        test_root = scene_dir / "test"
+        classes = sorted([p.name for p in train_root.iterdir() if p.is_dir()])
+        class_to_idx = {c: idx for idx, c in enumerate(classes)}
 
-    #     # (1) 이미지 로드 및 라벨 생성
-    #     # --- Train split 이미지/라벨/이름 수집 ---
-    #     x_train, y_train, x_train_names = [], [], []
-    #     for cls in classes:
-    #         for img_path in sorted((train_root / cls).glob("*")):
-    #             if img_path.is_file():
-    #                 x_train.append(load_color(img_path))
-    #                 y_train.append(class_to_idx[cls])
-    #                 x_train_names.append(f"{cls}_{img_path.stem}")
+        # (1) 이미지 로드 및 라벨 생성
+        # --- Train split 이미지/라벨/이름 수집 ---
+        x_train, y_train, x_train_names = [], [], []
+        for cls in classes:
+            for img_path in sorted((train_root / cls).glob("*")):
+                if img_path.is_file():
+                    x_train.append(load_color(img_path))
+                    y_train.append(class_to_idx[cls])
+                    x_train_names.append(f"{cls}_{img_path.stem}")
 
-    #     # --- Test split 이미지/라벨/이름 수집 ---
-    #     x_test, y_test, x_test_names = [], [], []
-    #     for cls in classes:
-    #         for img_path in sorted((test_root / cls).glob("*")):
-    #             if img_path.is_file():
-    #                 x_test.append(load_color(img_path))
-    #                 y_test.append(class_to_idx[cls])
-    #                 x_test_names.append(f"{cls}_{img_path.stem}")
+        # --- Test split 이미지/라벨/이름 수집 ---
+        x_test, y_test, x_test_names = [], [], []
+        for cls in classes:
+            for img_path in sorted((test_root / cls).glob("*")):
+                if img_path.is_file():
+                    x_test.append(load_color(img_path))
+                    y_test.append(class_to_idx[cls])
+                    x_test_names.append(f"{cls}_{img_path.stem}")
 
-    #     # --- Train/Test 라벨 분포 ---
-    #     logger.info("[문제1] Train=%d, Test=%d, Classes=%d", len(x_train), len(x_test), len(classes))
-    #     train_counts = np.bincount(np.asarray(y_train, dtype=np.int64), minlength=len(classes))
-    #     test_counts = np.bincount(np.asarray(y_test, dtype=np.int64), minlength=len(classes))
-    #     train_total = max(1, int(train_counts.sum()))
-    #     test_total = max(1, int(test_counts.sum()))
-    #     logger.info("[문제1] Train Ratio=%s", np.round(train_counts / train_total, 3).tolist())
-    #     logger.info("[문제1] Test Ratio=%s", np.round(test_counts / test_total, 3).tolist())
+        # --- Train/Test 라벨 분포 ---
+        logger.info("[문제1] Train=%d, Test=%d, Classes=%d", len(x_train), len(x_test), len(classes))
+        train_counts = np.bincount(np.asarray(y_train, dtype=np.int64), minlength=len(classes))
+        test_counts = np.bincount(np.asarray(y_test, dtype=np.int64), minlength=len(classes))
+        train_total = max(1, int(train_counts.sum()))
+        test_total = max(1, int(test_counts.sum()))
+        logger.info("[문제1] Train Ratio=%s", np.round(train_counts / train_total, 3).tolist())
+        logger.info("[문제1] Test Ratio=%s", np.round(test_counts / test_total, 3).tolist())
 
-    #     # (2) 격자 패치 기반 SIFT → BoF 벡터
-    #     # --- 격자형 패치 위치를 활용한 SIFT 추출 (patch_hw/stride로 조절) ---
-    #     patch_hw, stride = 32, 16  # patch_hw: {24, 32, 48}, stride: {8, 16, 32}
-    #     train_descs = [_extract_grid_sift(img, patch_hw, stride) for img in x_train]  # 학습용 BoF 입력
-    #     test_descs = [_extract_grid_sift(img, patch_hw, stride) for img in x_test]  # 평가용 BoF 입력
+        # (2) 격자 패치 기반 SIFT → BoF 벡터
+        # --- 격자형 패치 위치를 활용한 SIFT 추출 (patch_hw/stride로 조절) ---
+        patch_hw, stride = 32, 16  # patch_hw: {24, 32, 48}, stride: {8, 16, 32}
+        train_descs = [_extract_grid_sift(img, patch_hw, stride) for img in x_train]  # 학습용 BoF 입력
+        test_descs = [_extract_grid_sift(img, patch_hw, stride) for img in x_test]  # 평가용 BoF 입력
 
-    #     # (3) 모든 descriptor를 한데 모아 K-Means Codebook 생성 → BoF 벡터 생성
-    #     # --- PCA 사용하지 않음 → PCA 후 모든 PCA축을 다 사용하는 구조면 연산비용만 증가하고 실익이 없을 것이라 판단이 들었음.
-    #     flattened = np.vstack(train_descs)
-    #     codebook = VisualCodebook(k=80)  # k=visual word 수 (20/40/80 등)
-    #     codebook.fit(flattened)
-    #     encoder = BoFEncoder(k=codebook.k, mode="hard", normalize="l1")
+        # (3) 모든 descriptor를 한데 모아 K-Means Codebook 생성 → BoF 벡터 생성
+        # --- PCA 사용하지 않음 → PCA 후 모든 PCA축을 다 사용하는 구조면 연산비용만 증가하고 실익이 없을 것이라 판단이 들었음.
+        flattened = np.vstack(train_descs)
+        codebook = VisualCodebook(k=80)  # k=visual word 수 (20/40/80 등)
+        codebook.fit(flattened)
+        encoder = BoFEncoder(k=codebook.k, mode="hard", normalize="l1")
 
-    #     hist_root = result_dir / "p1_hist"
-    #     train_hist_dir = hist_root / "train"
-    #     test_hist_dir = hist_root / "test"
+        hist_root = result_dir / "p1_hist"
+        train_hist_dir = hist_root / "train"
+        test_hist_dir = hist_root / "test"
 
-    #     # --- 학습/테스트 이미지를 BoF 히스토그램으로 변환하고 PNG 저장 (등간격 30개 샘플) ---
-    #     train_hist_indices = sorted(
-    #         set(np.linspace(0, len(train_descs) - 1, num=min(30, len(train_descs)), dtype=int).tolist() if train_descs else [])
-    #     )
-    #     test_hist_indices = sorted(
-    #         set(np.linspace(0, len(test_descs) - 1, num=min(30, len(test_descs)), dtype=int).tolist() if test_descs else [])
-    #     )
-    #     train_bow_list: List[np.ndarray] = []
-    #     for idx, desc in enumerate(train_descs):
-    #         vec = encoder.encode(codebook.transform(desc))
-    #         train_bow_list.append(vec)
-    #         if idx in train_hist_indices:
-    #             save_histogram(
-    #                 vec,
-    #                 train_hist_dir / f"{idx:05d}_{x_train_names[idx]}.png",
-    #                 f"Train {x_train_names[idx]}",
-    #             )
+        # --- 학습/테스트 이미지를 BoF 히스토그램으로 변환하고 PNG 저장 (등간격 30개 샘플) ---
+        train_hist_indices = sorted(
+            set(np.linspace(0, len(train_descs) - 1, num=min(30, len(train_descs)), dtype=int).tolist() if train_descs else [])
+        )
+        test_hist_indices = sorted(
+            set(np.linspace(0, len(test_descs) - 1, num=min(30, len(test_descs)), dtype=int).tolist() if test_descs else [])
+        )
+        train_bow_list: List[np.ndarray] = []
+        for idx, desc in enumerate(train_descs):
+            vec = encoder.encode(codebook.transform(desc))
+            train_bow_list.append(vec)
+            if idx in train_hist_indices:
+                save_histogram(
+                    vec,
+                    train_hist_dir / f"{idx:05d}_{x_train_names[idx]}.png",
+                    f"Train {x_train_names[idx]}",
+                )
 
-    #     test_bow_list: List[np.ndarray] = []
-    #     for idx, desc in enumerate(test_descs):
-    #         vec = encoder.encode(codebook.transform(desc))
-    #         test_bow_list.append(vec)
-    #         if idx in test_hist_indices:
-    #             save_histogram(
-    #                 vec,
-    #                 test_hist_dir / f"{idx:05d}_{x_test_names[idx]}.png",
-    #                 f"Test {x_test_names[idx]}",
-    #             )
+        test_bow_list: List[np.ndarray] = []
+        for idx, desc in enumerate(test_descs):
+            vec = encoder.encode(codebook.transform(desc))
+            test_bow_list.append(vec)
+            if idx in test_hist_indices:
+                save_histogram(
+                    vec,
+                    test_hist_dir / f"{idx:05d}_{x_test_names[idx]}.png",
+                    f"Test {x_test_names[idx]}",
+                )
 
-    #     X_train_bow = np.vstack(train_bow_list)
-    #     X_test_bow = np.vstack(test_bow_list)
-    #     y_train_arr = np.asarray(y_train, dtype=np.int64)
-    #     y_test_arr = np.asarray(y_test, dtype=np.int64)
+        X_train_bow = np.vstack(train_bow_list)
+        X_test_bow = np.vstack(test_bow_list)
+        y_train_arr = np.asarray(y_train, dtype=np.int64)
+        y_test_arr = np.asarray(y_test, dtype=np.int64)
 
-    #     # ML 모델 Hyperopt Runner
-    #     runner = HyperoptRunner()
+        # ML 모델 Hyperopt Runner
+        runner = HyperoptRunner()
 
-    #     # Train/Valid 분할
-    #     X_tr, X_val, y_tr, y_val = train_test_split(
-    #         X_train_bow,
-    #         y_train_arr,
-    #         test_size=0.2,
-    #         random_state=2025,
-    #         stratify=y_train_arr,
-    #     )
+        # Train/Valid 분할
+        X_tr, X_val, y_tr, y_val = train_test_split(
+            X_train_bow,
+            y_train_arr,
+            test_size=0.2,
+            random_state=2025,
+            stratify=y_train_arr,
+        )
 
-    #     # Baseline 모델 파라미터
-    #     classical_models = {
-    #         "svm": {"params": {"C": 1.0, "kernel": "linear"}},
-    #         "rf": {"params": {"n_estimators": 500, "max_depth": None}},
-    #         "xgb": {"params": {"n_estimators": 500, "learning_rate": 0.05}},
-    #     }
+        # Baseline 모델 파라미터
+        classical_models = {
+            "svm": {"params": {"C": 1.0, "kernel": "linear"}},
+            "rf": {"params": {"n_estimators": 500, "max_depth": None}},
+            "xgb": {"params": {"n_estimators": 500, "learning_rate": 0.05}},
+        }
 
-    #     logger.info("---- [문제1] 파라미터 탐색 / 최종 스코어 / 시각화 ----")
-    #     p1_records: List[Dict[str, Any]] = []
-    #     for model_name, model_cfg in classical_models.items():
-    #         save_dir = result_dir / f"p1_{model_name}"
-    #         trainer_cfg = TrainerConfig(save_dir=save_dir)
+        logger.info("---- [문제1] 파라미터 탐색 / 최종 스코어 / 시각화 ----")
+        p1_records: List[Dict[str, Any]] = []
+        for model_name, model_cfg in classical_models.items():
+            save_dir = result_dir / f"p1_{model_name}"
+            trainer_cfg = TrainerConfig(save_dir=save_dir)
 
-    #         # Baseline 모델 학습 (체크포인트 존재 시 재학습 스킵)
-    #         baseline_model = create_classical_model(model_name, params=model_cfg["params"])
-    #         baseline_trainer = MLTrainer(model=baseline_model, config=trainer_cfg)
-    #         baseline_ckpt = save_dir / f"{model_name}_baseline.pkl"
-    #         # 저장된 checkpoint가 있으면 재학습 없이 로드
-    #         if baseline_ckpt.exists():
-    #             logger.info("[문제1][%s] Baseline checkpoint 로드: %s", model_name.upper(), baseline_ckpt)
-    #             baseline_trainer.load_model(baseline_ckpt)
-    #         else:
-    #             baseline_trainer.fit(X_train_bow, y_train_arr)
-    #             baseline_trainer.save(baseline_ckpt.name)
+            # Baseline 모델 학습 (체크포인트 존재 시 재학습 스킵)
+            baseline_model = create_classical_model(model_name, params=model_cfg["params"])
+            baseline_trainer = MLTrainer(model=baseline_model, config=trainer_cfg)
+            baseline_ckpt = save_dir / f"{model_name}_baseline.pkl"
+            # 저장된 checkpoint가 있으면 재학습 없이 로드
+            if baseline_ckpt.exists():
+                logger.info("[문제1][%s] Baseline checkpoint 로드: %s", model_name.upper(), baseline_ckpt)
+                baseline_trainer.load_model(baseline_ckpt)
+            else:
+                baseline_trainer.fit(X_train_bow, y_train_arr)
+                baseline_trainer.save(baseline_ckpt.name)
 
-    #         # Baseline 모델 평가
-    #         baseline_preds = baseline_trainer.predict(X_test_bow)
-    #         baseline_stats = compute_classification_metrics(y_test_arr, baseline_preds, classes)
-    #         # 평가결과 저장
-    #         plot_confusion_matrix(baseline_stats["confusion_matrix"], classes, save_dir / f"confusion_baseline_{model_name}.png")
-    #         logger.info(
-    #             "[문제1][%s][Baseline] Acc=%.4f | Prec=%.4f | Recall=%.4f | F1=%.4f\n%s",
-    #             model_name.upper(),
-    #             baseline_stats["accuracy"],
-    #             baseline_stats["precision"],
-    #             baseline_stats["recall"],
-    #             baseline_stats["f1"],
-    #             baseline_stats["confusion_matrix"],
-    #         )
-    #         p1_records.append(metrics_to_record(model_name.upper(), "baseline", baseline_stats))
+            # Baseline 모델 평가
+            baseline_preds = baseline_trainer.predict(X_test_bow)
+            baseline_stats = compute_classification_metrics(y_test_arr, baseline_preds, classes)
+            # 평가결과 저장
+            plot_confusion_matrix(baseline_stats["confusion_matrix"], classes, save_dir / f"confusion_baseline_{model_name}.png")
+            logger.info(
+                "[문제1][%s][Baseline] Acc=%.4f | Prec=%.4f | Recall=%.4f | F1=%.4f\n%s",
+                model_name.upper(),
+                baseline_stats["accuracy"],
+                baseline_stats["precision"],
+                baseline_stats["recall"],
+                baseline_stats["f1"],
+                baseline_stats["confusion_matrix"],
+            )
+            p1_records.append(metrics_to_record(model_name.upper(), "baseline", baseline_stats))
 
-    #         # Hyperopt 탐색 → 최적 모델로 전체 학습 후 평가
-    #         tuned_trainer = MLTrainer(
-    #             model=create_classical_model(model_name, params=model_cfg["params"]),
-    #             config=trainer_cfg,
-    #         )
+            # Hyperopt 탐색 → 최적 모델로 전체 학습 후 평가
+            tuned_trainer = MLTrainer(
+                model=create_classical_model(model_name, params=model_cfg["params"]),
+                config=trainer_cfg,
+            )
 
-    #         # 최적 모델 저장경로
-    #         tuned_ckpt = save_dir / f"{model_name}_tuned.pkl"
-    #         tuned_param_path = save_dir / f"{model_name}_tuned_params.json"
-    #         logs_df = None
-    #         best_params = None
-    #         # Hyperopt 결과/모델이 이미 존재하면 탐색 단계를 건너뜀
-    #         if tuned_ckpt.exists():
-    #             tuned_trainer.load_model(tuned_ckpt)
-    #             best_params = load_json(tuned_param_path)
-    #             logger.info(
-    #                 "[문제1][%s] 튜닝 모델 체크포인트 로드 완료 (Hyperopt 생략): %s",
-    #                 model_name.upper(),
-    #                 tuned_ckpt,
-    #             )
-    #         else:
-    #             _, best_params, logs_df = tuned_trainer.hyperopt_search(
-    #                 model_type=model_name,
-    #                 search_runner=runner,
-    #                 X_train=X_tr,
-    #                 y_train=y_tr,
-    #                 X_val=X_val,
-    #                 y_val=y_val,
-    #                 max_evals=100,
-    #             )
-    #             tuned_trainer.save(tuned_ckpt.name)
-    #             if best_params:
-    #                 save_json(best_params, tuned_param_path)
+            # 최적 모델 저장경로
+            tuned_ckpt = save_dir / f"{model_name}_tuned.pkl"
+            tuned_param_path = save_dir / f"{model_name}_tuned_params.json"
+            logs_df = None
+            best_params = None
+            # Hyperopt 결과/모델이 이미 존재하면 탐색 단계를 건너뜀
+            if tuned_ckpt.exists():
+                tuned_trainer.load_model(tuned_ckpt)
+                best_params = load_json(tuned_param_path)
+                logger.info(
+                    "[문제1][%s] 튜닝 모델 체크포인트 로드 완료 (Hyperopt 생략): %s",
+                    model_name.upper(),
+                    tuned_ckpt,
+                )
+            else:
+                _, best_params, logs_df = tuned_trainer.hyperopt_search(
+                    model_type=model_name,
+                    search_runner=runner,
+                    X_train=X_tr,
+                    y_train=y_tr,
+                    X_val=X_val,
+                    y_val=y_val,
+                    max_evals=100,
+                )
+                tuned_trainer.save(tuned_ckpt.name)
+                if best_params:
+                    save_json(best_params, tuned_param_path)
 
-    #         if best_params:
-    #             logger.info("[문제1][%s] Hyperopt Best Params=%s", model_name.upper(), best_params)
-    #         elif tuned_ckpt.exists():
-    #             logger.info("[문제1][%s] Hyperopt 파라미터 파일을 찾지 못했습니다.", model_name.upper())
+            if best_params:
+                logger.info("[문제1][%s] Hyperopt Best Params=%s", model_name.upper(), best_params)
+            elif tuned_ckpt.exists():
+                logger.info("[문제1][%s] Hyperopt 파라미터 파일을 찾지 못했습니다.", model_name.upper())
 
-    #         # 최적 모델 평가
-    #         tuned_preds = tuned_trainer.predict(X_test_bow)
-    #         tuned_stats = compute_classification_metrics(y_test_arr, tuned_preds, classes)
-    #         # 평가결과 저장
-    #         plot_confusion_matrix(tuned_stats["confusion_matrix"], classes, save_dir / f"confusion_tuned_{model_name}.png")
-    #         logger.info(
-    #             "[문제1][%s][Tuned] Acc=%.4f | Prec=%.4f | Recall=%.4f | F1=%.4f\n%s",
-    #             model_name.upper(),
-    #             tuned_stats["accuracy"],
-    #             tuned_stats["precision"],
-    #             tuned_stats["recall"],
-    #             tuned_stats["f1"],
-    #             tuned_stats["confusion_matrix"],
-    #         )
-    #         p1_records.append(metrics_to_record(model_name.upper(), "tuned", tuned_stats))
+            # 최적 모델 평가
+            tuned_preds = tuned_trainer.predict(X_test_bow)
+            tuned_stats = compute_classification_metrics(y_test_arr, tuned_preds, classes)
+            # 평가결과 저장
+            plot_confusion_matrix(tuned_stats["confusion_matrix"], classes, save_dir / f"confusion_tuned_{model_name}.png")
+            logger.info(
+                "[문제1][%s][Tuned] Acc=%.4f | Prec=%.4f | Recall=%.4f | F1=%.4f\n%s",
+                model_name.upper(),
+                tuned_stats["accuracy"],
+                tuned_stats["precision"],
+                tuned_stats["recall"],
+                tuned_stats["f1"],
+                tuned_stats["confusion_matrix"],
+            )
+            p1_records.append(metrics_to_record(model_name.upper(), "tuned", tuned_stats))
 
-    #         if logs_df is not None and not logs_df.empty:
-    #             # --- Hyperopt 탐색 로그/시각화 저장 ---
-    #             logs_df["model_type"] = model_name
-    #             logs_df.to_csv(save_dir / f"hyperopt_logs_{model_name}.csv", index=False)
+            if logs_df is not None and not logs_df.empty:
+                # --- Hyperopt 탐색 로그/시각화 저장 ---
+                logs_df["model_type"] = model_name
+                logs_df.to_csv(save_dir / f"hyperopt_logs_{model_name}.csv", index=False)
 
-    #             # 산점도: 변수 vs F1 Score
-    #             plot_param_performance_curves(
-    #                 logs_df,
-    #                 metric_col="f1_score",
-    #                 save_dir=save_dir / "hyperopt_plots",
-    #                 prefix=f"p1_{model_name}",
-    #                 ignore_cols=["loss", "status", "model_type"],
-    #             )
-    #             # 파라미터 조합별 평균 히트맵
-    #             plot_param_heatmaps(
-    #                 logs_df,
-    #                 metric_col="f1_score",
-    #                 save_dir=save_dir / "hyperopt_plots",
-    #                 prefix=f"p1_{model_name}",
-    #                 ignore_cols=["loss", "status", "model_type"],
-    #             )
-    #             # Parallel Coordinates plot: 여러 파라미터를 동시에 확인
-    #             plot_parallel_param_coordinates(
-    #                 logs_df,
-    #                 metric_col="f1_score",
-    #                 save_path=save_dir / "hyperopt_plots" / f"p1_{model_name}_parallel.png",
-    #                 ignore_cols=["loss", "status", "model_type"],
-    #             )
+                # 산점도: 변수 vs F1 Score
+                plot_param_performance_curves(
+                    logs_df,
+                    metric_col="f1_score",
+                    save_dir=save_dir / "hyperopt_plots",
+                    prefix=f"p1_{model_name}",
+                    ignore_cols=["loss", "status", "model_type"],
+                )
+                # 파라미터 조합별 평균 히트맵
+                plot_param_heatmaps(
+                    logs_df,
+                    metric_col="f1_score",
+                    save_dir=save_dir / "hyperopt_plots",
+                    prefix=f"p1_{model_name}",
+                    ignore_cols=["loss", "status", "model_type"],
+                )
+                # Parallel Coordinates plot: 여러 파라미터를 동시에 확인
+                plot_parallel_param_coordinates(
+                    logs_df,
+                    metric_col="f1_score",
+                    save_path=save_dir / "hyperopt_plots" / f"p1_{model_name}_parallel.png",
+                    ignore_cols=["loss", "status", "model_type"],
+                )
 
-    #             logger.info(
-    #                 "[문제1][%s] F1 Score Range: %.4f ~ %.4f (mean=%.4f)",
-    #                 model_name.upper(),
-    #                 logs_df["f1_score"].min(),
-    #                 logs_df["f1_score"].max(),
-    #                 logs_df["f1_score"].mean(),
-    #             )
-    #     # --- 모든 실험 결과를 DataFrame으로 변환해 CSV 저장 ---
-    #     if p1_records:
-    #         p1_df = pd.DataFrame(p1_records)
-    #         p1_df_path = result_dir / "p1_metrics.csv"
-    #         p1_df.to_csv(p1_df_path, index=False)
-    #         logger.info("[문제1] Metrics Summary:\n%s", p1_df.to_string(index=False))
+                logger.info(
+                    "[문제1][%s] F1 Score Range: %.4f ~ %.4f (mean=%.4f)",
+                    model_name.upper(),
+                    logs_df["f1_score"].min(),
+                    logs_df["f1_score"].max(),
+                    logs_df["f1_score"].mean(),
+                )
+        # --- 모든 실험 결과를 DataFrame으로 변환해 CSV 저장 ---
+        if p1_records:
+            p1_df = pd.DataFrame(p1_records)
+            p1_df_path = result_dir / "p1_metrics.csv"
+            p1_df.to_csv(p1_df_path, index=False)
+            logger.info("[문제1] Metrics Summary:\n%s", p1_df.to_string(index=False))
 
-    # else:
-    #     logger.warning("[문제1] 데이터셋을 찾을 수 없습니다: %s", scene_dir)
+    else:
+        logger.warning("[문제1] 데이터셋을 찾을 수 없습니다: %s", scene_dir)
 
     # ------------------------------------------------------------------
     # 2. 문제 2 — EuroSAT Classification (MLP/CNN/ResNet/ConvNeXt)
