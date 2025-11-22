@@ -62,65 +62,61 @@ python src/homework_03_03.py
 
 ## 폴더 구조
 ```
-project/
-├── README.md
-├── requirements.txt
-├── log/
-│   ├── hw03_0102_*.log         # 문제1/2 진행 로그
-│   └── hw03_03_*.log           # 문제3 진행 로그
-├── result/
-│   ├── p1_svm/...
-│   ├── p1_rf/...
-│   ├── p1_xgb/...
-│   ├── p2_mlp/...
-│   ├── p2_cnn/...
-│   ├── p2_resnet/...
-│   ├── p2_convnext/...
-│   └── p3_detectron2/...
-├── data/
-│   ├── SCENE-15/
-│   │   ├── train/<class>/*.jpg
-│   │   └── test/<class>/*.jpg
-│   ├── EuroSAT/2750/<class>/*.jpg
-│   └── balloon/
-│       ├── train/*.jpg, via_region_data.json
-│       └── val/*.jpg, via_region_data.json
-└── src/
-    ├── homework_03_0102.py
-    ├── homework_03_03.py
-    ├── bof/
-    │   ├── codebook.py
-    │   └── encoder.py
-    ├── features/
-    │   ├── descriptors.py
-    │   └── patch.py
-    ├── model/
-    │   ├── dataset_eurosat.py
-    │   ├── dl/
-    │   │   ├── mlp.py 
-    │   │   ├── cnn.py
-    │   │   ├── resnet.py
-    │   │   ├── convnext.py
-    │   │   └── utils.py
-    │   ├── ml/
-    │   │   └── classical_ml.py
-    │   ├── optim/
-    │   │   └── hyperopt_runner.py
-    │   └── trainer/
-    │       ├── trainer_base.py
-    │       ├── trainer_ml.py
-    │       └── trainer_torch.py
-    ├── detection/
-    │   ├── balloon_dataset.py
-    │   ├── config_builder.py
-    │   ├── evaluator.py
-    │   └── trainer_detectron.py
-    └── utils/
-        ├── io.py
-        ├── logger.py
-        ├── metric.py
-        ├── paths.py
-        └── visualize.py
+📂 project/
+├── 📄 README.md
+├── 📄 requirements.txt
+├── 📂 log/
+│   ├── 📄 hw03_0102_*.log              # 문제1/2 진행 로그
+│   └── 📄 hw03_03_*.log                # 문제3 진행 로그
+├── 📂 result/                          # 문항별 Output
+│   ├── 📂 p1_svm/
+│   ├── 📂 p1_rf/
+│   ├── 📂 p1_xgb/
+│   ├── 📂 p2_mlp/
+│   ├── 📂 p2_cnn/
+│   ├── 📂 p2_resnet/
+│   ├── 📂 p2_convnext/
+│   └── 📂 p3_detectron2/
+├── 📂 data/                            # 데이터셋 모음
+│   ├── 📂 SCENE-15/                    # Bag-of-Features용 Scene-15 (train/test)
+│   ├── 📂 EuroSAT/2750/                # EuroSAT 10-class RGB 이미지
+│   └── 📂 balloon/                     # Detectron2 Fine-tuning 풍선 데이터
+└── 📂 src/                             # 실행 스크립트와 핵심 모듈
+    ├── 📄 homework_03_0102.py          # **문제1/2 실행 스크립트**
+    ├── 📄 homework_03_03.py            # **문제3 실행 스크립트**
+    ├── 📂 bof/                         # BoF Codebook/Encoder
+    │   ├── 📄 codebook.py
+    │   └── 📄 encoder.py
+    ├── 📂 features/                    # SIFT/HOG/패치 추출
+    │   ├── 📄 descriptors.py
+    │   └── 📄 patch.py
+    ├── 📂 model/
+    │   ├── 📄 dataset_eurosat.py        # 문제 2 데이터셋 Loader
+    │   ├── 📂 dl/                       # 딥러닝 모델 아키텍처
+    │   │   ├── 📄 mlp.py
+    │   │   ├── 📄 cnn.py
+    │   │   ├── 📄 resnet.py
+    │   │   ├── 📄 convnext.py
+    │   │   └── 📄 utils.py
+    │   ├── 📂 ml/                       # SVM/RF/XGB 모델 아키텍처
+    │   │   └── 📄 classical_ml.py
+    │   ├── 📂 optim/                    # Hyper-parameter 최적화 모듈
+    │   │   └── 📄 hyperopt_runner.py
+    │   └── 📂 trainer/                  # ML/DL 모델 학습 실행 모듈
+    │       ├── 📄 trainer_base.py
+    │       ├── 📄 trainer_ml.py
+    │       └── 📄 trainer_torch.py
+    ├── 📂 detection/                    # Detectron2 Fine-tuning 구성
+    │   ├── 📄 balloon_dataset.py
+    │   ├── 📄 config_builder.py
+    │   ├── 📄 evaluator.py
+    │   └── 📄 trainer_detectron.py
+    └── 📂 utils/                        # 입출력/로그/지표/경로/시각화 공용 유틸
+        ├── 📄 io.py
+        ├── 📄 logger.py
+        ├── 📄 metric.py
+        ├── 📄 paths.py
+        └── 📄 visualize.py
 ```
 
 ---
