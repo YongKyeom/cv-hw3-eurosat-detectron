@@ -43,6 +43,34 @@
 - Mask R-CNN (R50-FPN)으로 balloon 데이터셋을 fine-tuning
 - 사전학습/튜닝 모델 inference, COCO AP/AR 평가, 시각화 이미지 저장
 
+## 환경 구성
+
+### 문제 3-1/3-2 (.venv)
+```bash
+python3 -m venv .venv
+source .venv/bin/activate  # Mac/Linux
+# Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 문제 3-3 (.venv2, Detectron2 빌드)
+- Mac 로컬에서 Detectron2 빌드를 위해 별도 가상환경 `.venv2` 사용
+- PyTorch 1.9 계열 + numpy 1.x + OpenCV 4.9 + clang 빌드
+
+```bash
+python3 -m venv .venv2
+source .venv2/bin/activate  # Mac/Linux
+# Windows: .venv2\Scripts\activate
+
+python -m pip install --upgrade pip setuptools wheel ninja
+python -m pip install "torch==1.9.*" "torchvision==0.10.*" "torchaudio==0.9.*"
+python -m pip install "numpy==1.26.4"
+python -m pip install "opencv-python==4.9.0.80"
+CC=clang CXX=clang++ ARCHFLAGS="-arch arm64" \
+python -m pip install --no-build-isolation 'git+https://github.com/facebookresearch/detectron2.git'
+pip install -r requirements2.txt
+```
+
 ---
 
 ## 실행 방법
