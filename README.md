@@ -140,6 +140,7 @@ python src/homework_03_03.py
     │   ├── 📄 balloon_dataset.py
     │   ├── 📄 config_builder.py
     │   ├── 📄 evaluator.py
+    │   ├── 📄 fine_tune_settings.py
     │   └── 📄 trainer_detectron.py
     └── 📂 utils/                        # 입출력/로그/지표/경로/시각화 공용 유틸
         ├── 📄 io.py
