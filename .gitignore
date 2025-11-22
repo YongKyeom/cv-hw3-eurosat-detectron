@@ -1,5 +1,5 @@
 # 가상 환경
-.venv/
+.venv*/
 
 # VS Code 설정
 .vscode/
