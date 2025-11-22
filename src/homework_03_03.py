@@ -100,7 +100,7 @@ def _register_balloon_datasets(balloon_root: Path) -> None:
 
 
 def _select_sample_image(balloon_root: Path, assets_dir: Path) -> Optional[Path]:
-    """보고서용 샘플 이미지를 선택한다.
+    """샘플 이미지를 선택한다.
 
     우선순위: assets 폴더 → balloon/val → balloon/train.
 
@@ -157,7 +157,9 @@ def _get_pretrained_metadata() -> Any:
 if __name__ == "__main__":
     st_time = datetime.now()
 
-    # 프로젝트 공통 경로/로거/시드 설정
+    # ------------------------------------------------------------------
+    # 0. 경로/로거/시드 설정
+    # ------------------------------------------------------------------
     project_root = Path(os.path.join(os.path.dirname(__file__), "..")).resolve()
     paths = Paths.from_root(project_root)
     data_dir = paths.data_dir
@@ -170,143 +172,147 @@ if __name__ == "__main__":
 
     seed_everything(2025)
 
+    # ==============================================================================
+    # 문제 3: Detectron2 Segmentation + Fine-tunning
+    # ==============================================================================
+    # Detectron2 DatasetCatalog 등록 및 데이터 통계 로깅
     balloon_root = data_dir / "balloon"
-    if not balloon_root.exists():
-        logger.warning("[문제3] 풍선 데이터셋이 없습니다: %s", balloon_root)
-    else:
-        # Detectron2 DatasetCatalog 등록 및 데이터 통계 로깅
-        _register_balloon_datasets(balloon_root)
-        _log_dataset_stats(balloon_root)
+    _register_balloon_datasets(balloon_root)
+    _log_dataset_stats(balloon_root)
 
-        metadata_balloon = MetadataCatalog.get("balloon_train")
-        metadata_pretrained = _get_pretrained_metadata()
-        val_images = _collect_val_images(balloon_root, 5)
+    metadata_balloon = MetadataCatalog.get("balloon_train")
+    metadata_pretrained = _get_pretrained_metadata()
 
-        # 문제 요구사항: 가벼운 Mask R-CNN (R50-FPN) 사용
-        model_name = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
-        logger.info("[문제3] 모델 선택: %s", model_name)
+    # 사전/파인튜닝 결과 비교용 val 이미지 샘플
+    val_images = _collect_val_images(balloon_root, 5)
 
-        p3_dir = result_dir / "p3_detectron2"
-        pre_dir = p3_dir / "pretrained"
-        ft_dir = p3_dir / "finetuned"
-        ensure_dir(pre_dir)
-        ensure_dir(ft_dir)
+    # Pre-trained 모델: 가벼운 Mask R-CNN (R50-FPN) 사용
+    model_name = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
+    logger.info("[문제3] 모델 선택: %s → 가용한 자원 내 Fine-tunning 가능 모델", model_name)
 
-        sample_image = _select_sample_image(balloon_root, assets_dir)
+    p3_dir = result_dir / "p3_detectron2"
+    pre_dir = p3_dir / "pretrained"
+    ft_dir = p3_dir / "finetuned"
+    ensure_dir(pre_dir)
+    ensure_dir(ft_dir)
 
-        # ------------------------------------------------------------------
-        # 3-1 사전학습 모델 확인
-        #     • COCO 80-class 헤드 그대로 로드 → 예시/val 이미지 시각화
-        # ------------------------------------------------------------------
-        pre_vis_cfg = build_config(
+    # 샘플 이미지 선택 (assets → val → train 순)
+    sample_image = _select_sample_image(balloon_root, assets_dir)
+
+    # ------------------------------------------------------------------
+    # 3-1 사전학습 모델 확인
+    #     • COCO 80-class 헤드 그대로 로드 → 예시/val 이미지 시각화
+    # ------------------------------------------------------------------
+    pre_vis_cfg = build_config(
+        model_name=model_name,
+        train_dataset="balloon_train",
+        output_dir=str(pre_dir / "tmp_vis"),
+        base_lr=0.00025,
+        max_iter=1000,
+        num_classes=None,
+    )
+    pre_vis_cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
+    predictor_pre = DefaultPredictor(pre_vis_cfg)  # 사전학습 모델 인퍼런스 엔진
+
+    if sample_image is not None:
+        img = load_color(sample_image)
+        outputs = predictor_pre(img)
+        _visualize_predictions(img, outputs, metadata_pretrained, pre_dir / "sample_pretrained.png")
+
+    if val_images:
+        _render_batch_predictions(
+            predictor_pre,
+            metadata_pretrained,
+            val_images,
+            pre_dir / "val_pretrained",
+            prefix="pre",
+        )
+
+    # ------------------------------------------------------------------
+    # 3-3 모델 검증 (파인튜닝 전 baseline)
+    #     • Balloon 1-class 헤드로 AP/AR baseline 계산 및 저장
+    # ------------------------------------------------------------------
+    pre_eval_cfg = build_config(
+        model_name=model_name,
+        train_dataset="balloon_train",
+        output_dir=str(pre_dir / "baseline_eval"),
+        base_lr=0.00025,
+        max_iter=200,
+        num_classes=1,
+    )
+    pre_eval_cfg.DATASETS.TEST = ("balloon_val",)  # 평가 데이터셋 지정
+    pre_eval_cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
+    pre_eval_metrics = evaluate_model(pre_eval_cfg, "balloon_val")  # 사전학습 모델 baseline 평가
+    save_json({"pretrained": pre_eval_metrics}, pre_dir / "pretrained_metrics.json")
+    logger.info("[문제3] Pre-trained Eval: %s", pre_eval_metrics)
+
+    sweep_logs: List[Dict[str, Any]] = []
+
+    # ------------------------------------------------------------------
+    # 3-2/3-3/3-4 파인튜닝 및 비교
+    #     • 스윕별 학습 → 평가(AP/AR) 저장 → val/samples 시각화
+    # ------------------------------------------------------------------
+    for setting in SWEEP_SETTINGS:
+        # 파라미터 스윕별 결과 폴더 생성
+        exp_dir = ft_dir / setting.label
+        ensure_dir(exp_dir)
+
+        ft_cfg = build_config(
             model_name=model_name,
             train_dataset="balloon_train",
-            output_dir=str(pre_dir / "tmp_vis"),
-            base_lr=0.00025,
-            max_iter=1000,
-            num_classes=None,
+            output_dir=str(exp_dir / "output"),
+            base_lr=setting.base_lr,
+            max_iter=setting.max_iter,
+            ims_per_batch=setting.ims_per_batch,
+            num_classes=1,
         )
-        pre_vis_cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-        predictor_pre = DefaultPredictor(pre_vis_cfg)  # 사전학습 모델 인퍼런스 엔진
+        Path(ft_cfg.OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+        trainer = BalloonTrainer(ft_cfg)  # Detectron2 DefaultTrainer 확장 (데이터 로더/학습 루프 포함)
+        trainer.train_with_output()  # 지정한 파라미터로 파인튜닝 시작
 
-        if sample_image is not None:
-            img = load_color(sample_image)
-            outputs = predictor_pre(img)
-            _visualize_predictions(img, outputs, metadata_pretrained, pre_dir / "sample_pretrained.png")
+        final_weights = Path(ft_cfg.OUTPUT_DIR) / "model_final.pth"
+        ft_cfg.MODEL.WEIGHTS = str(final_weights)
+        ft_cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
+        ft_cfg.DATASETS.TEST = ("balloon_val",)
+        predictor_ft = DefaultPredictor(ft_cfg)  # 파인튜닝된 모델 인퍼런스 엔진
+
+        # 3-3) 파인튜닝 모델 성능 평가 (COCOEvaluator)
+        ft_eval = evaluate_model(ft_cfg, "balloon_val", weights_path=str(final_weights))
+        save_json(
+            {
+                "setting": setting.to_dict(),
+                "metrics": ft_eval,
+            },
+            exp_dir / "finetuned_metrics.json",
+        )
+        logger.info("[문제3] Fine-tuned Eval (%s): %s", setting.label, ft_eval)
+        sweep_logs.append({"setting": setting.to_dict(), "metrics": ft_eval})
 
         if val_images:
             _render_batch_predictions(
-                predictor_pre,
-                metadata_pretrained,
+                predictor_ft,
+                metadata_balloon,
                 val_images,
-                pre_dir / "val_pretrained",
-                prefix="pre",
+                exp_dir / "val_finetuned",
+                prefix="finetuned",
             )
 
-        # ------------------------------------------------------------------
-        # 3-3 모델 검증 (파인튜닝 전 baseline)
-        #     • Balloon 1-class 헤드로 AP/AR baseline 계산 및 저장
-        # ------------------------------------------------------------------
-        pre_eval_cfg = build_config(
-            model_name=model_name,
-            train_dataset="balloon_train",
-            output_dir=str(pre_dir / "baseline_eval"),
-            base_lr=0.00025,
-            max_iter=200,
-            num_classes=1,
-        )
-        pre_eval_cfg.DATASETS.TEST = ("balloon_val",)
-        pre_eval_cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-        pre_eval_metrics = evaluate_model(pre_eval_cfg, "balloon_val")
-        save_json({"pretrained": pre_eval_metrics}, pre_dir / "pretrained_metrics.json")
-        logger.info("[문제3] Pre-trained Eval: %s", pre_eval_metrics)
-
-        sweep_logs: List[Dict[str, Any]] = []
-
-        # ------------------------------------------------------------------
-        # 3-2/3-3/3-4 파인튜닝 및 비교
-        #     • 스윕별 학습 → 평가(AP/AR) 저장 → val/samples 시각화
-        # ------------------------------------------------------------------
-        for setting in SWEEP_SETTINGS:
-            # 파라미터 스윕별 결과 폴더 생성
-            exp_dir = ft_dir / setting.label
-            ensure_dir(exp_dir)
-
-            ft_cfg = build_config(
-                model_name=model_name,
-                train_dataset="balloon_train",
-                output_dir=str(exp_dir / "output"),
-                base_lr=setting.base_lr,
-                max_iter=setting.max_iter,
-                ims_per_batch=setting.ims_per_batch,
-                num_classes=1,
+        if sample_image is not None:
+            img = load_color(sample_image)
+            outputs = predictor_ft(img)
+            _visualize_predictions(img, outputs, metadata_balloon, exp_dir / "sample_finetuned.png")
+            logger.info(
+                "[문제3-4] %s 샘플 재검증 완료 - iteration/augmentation 튜닝 필요 여부 확인",
+                setting.label,
             )
-            Path(ft_cfg.OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
-            trainer = BalloonTrainer(ft_cfg)  # Detectron2 DefaultTrainer 확장
-            trainer.train_with_output()
 
-            final_weights = Path(ft_cfg.OUTPUT_DIR) / "model_final.pth"
-            ft_cfg.MODEL.WEIGHTS = str(final_weights)
-            ft_cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-            ft_cfg.DATASETS.TEST = ("balloon_val",)
-            predictor_ft = DefaultPredictor(ft_cfg)  # 파인튜닝된 모델 인퍼런스 엔진
-
-            ft_eval = evaluate_model(ft_cfg, "balloon_val", weights_path=str(final_weights))
-            save_json(
-                {
-                    "setting": setting.to_dict(),
-                    "metrics": ft_eval,
-                },
-                exp_dir / "finetuned_metrics.json",
-            )
-            logger.info("[문제3] Fine-tuned Eval (%s): %s", setting.label, ft_eval)
-            sweep_logs.append({"setting": setting.to_dict(), "metrics": ft_eval})
-
-            if val_images:
-                _render_batch_predictions(
-                    predictor_ft,
-                    metadata_balloon,
-                    val_images,
-                    exp_dir / "val_finetuned",
-                    prefix="finetuned",
-                )
-
-            if sample_image is not None:
-                img = load_color(sample_image)
-                outputs = predictor_ft(img)
-                _visualize_predictions(img, outputs, metadata_balloon, exp_dir / "sample_finetuned.png")
-                logger.info(
-                    "[문제3-4] %s 샘플 재검증 완료 - iteration/augmentation 튜닝 필요 여부 확인",
-                    setting.label,
-                )
-
-        save_json(
-            {
-                "pretrained": pre_eval_metrics,
-                "sweeps": sweep_logs,
-            },
-            p3_dir / "evaluation_summary.json",
-        )
+    save_json(
+        {
+            "pretrained": pre_eval_metrics,
+            "sweeps": sweep_logs,
+        },
+        p3_dir / "evaluation_summary.json",
+    )
 
     end_time = datetime.now()
     logger.info(

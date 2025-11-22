@@ -38,23 +38,23 @@ def build_config(
         CfgNode: Detectron2 config 객체
     """
     cfg = get_cfg()
-    cfg.MODEL.DEVICE = device
-    cfg.merge_from_file(model_zoo.get_config_file(model_name))
+    cfg.MODEL.DEVICE = device  # CPU 디바이스
+    cfg.merge_from_file(model_zoo.get_config_file(model_name))  # 모델 구조 로드
 
-    cfg.DATASETS.TRAIN = (train_dataset,)
-    cfg.DATASETS.TEST = ()
-    cfg.DATALOADER.NUM_WORKERS = 4
+    cfg.DATASETS.TRAIN = (train_dataset,)  # 학습 데이터셋 지정
+    cfg.DATASETS.TEST = ()  # 평가 데이터셋은 외부에서 세팅
+    cfg.DATALOADER.NUM_WORKERS = 4  # DataLoader 워커 수
 
-    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_name)
-    cfg.SOLVER.IMS_PER_BATCH = ims_per_batch
-    cfg.SOLVER.BASE_LR = base_lr
-    cfg.SOLVER.MAX_ITER = max_iter
-    cfg.SOLVER.STEPS = []  # no LR decay
+    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_name)  # 사전학습 가중치 경로
+    cfg.SOLVER.IMS_PER_BATCH = ims_per_batch  # 배치 크기
+    cfg.SOLVER.BASE_LR = base_lr  # 러닝레이트
+    cfg.SOLVER.MAX_ITER = max_iter  # 학습 iteration 수
+    cfg.SOLVER.STEPS = []  # LR decay 비활성화
 
-    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 64
+    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 64  # ROI Head 샘플 수
     if num_classes is not None:
-        cfg.MODEL.ROI_HEADS.NUM_CLASSES = num_classes
+        cfg.MODEL.ROI_HEADS.NUM_CLASSES = num_classes  # 클래스 수 설정 (None이면 기본 유지)
 
-    cfg.OUTPUT_DIR = output_dir
+    cfg.OUTPUT_DIR = output_dir  # 결과 저장 경로
 
     return cfg
