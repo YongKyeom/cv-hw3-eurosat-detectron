@@ -30,6 +30,10 @@ def evaluate_model(cfg, dataset_name: str, weights_path: str | None = None):
     DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
     model.eval()
 
-    evaluator = COCOEvaluator(dataset_name, cfg, False)
+    evaluator = COCOEvaluator(
+        dataset_name,
+        distributed=False,
+        output_dir=cfg.OUTPUT_DIR,
+    )
     loader = build_detection_test_loader(cfg, dataset_name)
     return inference_on_dataset(model, loader, evaluator)
