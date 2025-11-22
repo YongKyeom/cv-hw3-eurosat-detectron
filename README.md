@@ -50,6 +50,7 @@
 python3 -m venv .venv
 source .venv/bin/activate  # Mac/Linux
 # Windows: .venv\Scripts\activate
+
 pip install -r requirements.txt
 ```
 
@@ -68,6 +69,7 @@ python -m pip install "numpy==1.26.4"
 python -m pip install "opencv-python==4.9.0.80"
 CC=clang CXX=clang++ ARCHFLAGS="-arch arm64" \
 python -m pip install --no-build-isolation 'git+https://github.com/facebookresearch/detectron2.git'
+
 pip install -r requirements2.txt
 ```
 
@@ -148,8 +150,3 @@ python src/homework_03_03.py
 ```
 
 ---
-
-## 의존성
-```bash
-pip install -r requirements.txt
-```
